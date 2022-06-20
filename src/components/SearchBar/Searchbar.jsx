@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { toast } from 'react-toastify';
 import s from './Searchbar.module.css';
 
 export default function Searchbar({ onSubmit }) {
@@ -19,8 +18,6 @@ export default function Searchbar({ onSubmit }) {
     }
 
     onSubmit(query.trim().toLowerCase());
-
-    setQuery('');
   };
 
   return (
@@ -36,7 +33,7 @@ export default function Searchbar({ onSubmit }) {
           autoComplete="off"
           autoFocus
           placeholder="Search images and photos"
-          value={this.state.searchRequest}
+          value={query}
           onChange={handleNameChange}
         />
       </form>

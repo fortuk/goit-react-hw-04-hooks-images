@@ -1,126 +1,124 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from '../SearchBar/Searchbar';
 import ImageGallery from '../ImageGallery/ImageGallery';
 import imagesApi from '../../api/imagesApi';
 import Button from '../Button/Button';
 import Modal from '../Modal/Modal';
+import Container from '../Container/Container';
 import { Load } from '../loader/loader';
 import s from '../App/App.module.css';
 
-export default class App extends Component {
-  state = {
-    showModal: false,
-    images: [],
-    searchRequest: '',
-    loading: false,
-    error: null,
-    page: 1,
-    largeImageSrc: '',
-    alt: '',
-    status: 'idle',
-    modalImg: '',
-    modalAlt: '',
-  };
+export default function App() {
+  const [gallery, setGallery] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [modalImg, setModalImg] = useState('');
+  const [modalAlt, setModalAlt] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState(null);
 
-  componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.searchRequest;
-    const nextQuery = this.state.searchRequest;
+  useEffect(() => {
+    if (query.trim() === '') {
+      return;
+    }
 
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
+    setStatus('pending');
 
-    if (nextPage > 1) {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
+    imagesApi
+      .fetchImagesWithQuery(query, page)
+      .then(({ hits }) => {
+        const images = hits.map(({ id, webformatURL, largeImageURL, tags }) => {
+          return { id, webformatURL, largeImageURL, tags };
+        });
+        // console.log(images);
+        if (images.length > 0) {
+          setGallery(state => [...state, ...images]);
+          setStatus('resolved');
+        } else {
+          alert(`По запросу ${query} ничего не найдено.`);
+          setStatus('idle');
+        }
+      })
+      .catch(error => {
+        setError(error);
+        setStatus('rejected');
+      })
+      .finally(() => {
+        if (page > 1) {
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth',
+          });
+        }
       });
-    }
+  }, [page, query]);
 
-    if (prevQuery !== nextQuery) {
-      this.setState({ images: [], status: 'pending' });
-    }
-
-    if (prevQuery !== nextQuery || prevPage !== nextPage) {
-      imagesApi
-        .fetchImagesWithQuery(nextQuery, nextPage)
-        .then(({ hits }) => {
-          const images = hits.map(
-            ({ id, webformatURL, largeImageURL, tags }) => {
-              return { id, webformatURL, largeImageURL, tags };
-            },
-          );
-          if (images.length > 0) {
-            this.setState(prevState => {
-              return {
-                images: [...prevState.images, ...images],
-                status: 'resolved',
-              };
-            });
-          } else {
-            alert(`По запросу ${nextQuery} ничего не найдено.`);
-            this.setState({ status: 'idle' });
-          }
-        })
-        .catch(error => this.setState({ error, status: 'rejected' }));
-    }
-  }
-
-  handleSearchbarSubmit = request => {
-    if (request !== this.state.searchRequest) {
-      this.setState({ searchRequest: request, page: 1, status: 'pending' });
+  const handleSearchbarSubmit = request => {
+    if (request !== query) {
+      setGallery([]);
+      setPage(1);
+      setQuery(request);
     }
   };
 
-  fetchImages = () => {
-    this.setState(({ page }) => {
-      return { page: page + 1, status: 'pending' };
-    });
-
-    return;
+  const fetchImages = () => {
+    setPage(state => state + 1);
+    setStatus('pending');
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+  const toggleModal = () => {
+    setShowModal(!showModal);
   };
 
-  setCurrentPictureSrc = event => {
+  const setCurrentPictureSrc = event => {
     const imgForModal = event.target.dataset.src;
     const altForModal = event.target.alt;
-    this.setState({
-      showModal: true,
-      modalImg: imgForModal,
-      modalAlt: altForModal,
-    });
+
+    setModalImg(imgForModal);
+    setModalAlt(altForModal);
+    setShowModal(true);
   };
 
-  render() {
+  if (status === 'idle') {
     return (
-      <div className={s.App}>
-        <Searchbar onSubmit={this.handleSearchbarSubmit} />
+      <Container>
+        <Searchbar onSubmit={handleSearchbarSubmit} />
+      </Container>
+    );
+  }
 
-        {this.state.images.length !== 0 && (
-          <ImageGallery
-            toggleModal={this.setCurrentPictureSrc}
-            images={this.state.images}
-          />
-        )}
-        {this.state.showModal && (
-          <Modal onClose={this.toggleModal}>
-            <div>
-              <img src={this.state.largeImageSrc} alt={this.state.alt} />
-            </div>
+  if (status === 'rejected') {
+    return <h1>{error.message}</h1>;
+  }
+
+  if (status === 'resolved' || status === 'pending') {
+    return (
+      <>
+        {showModal && (
+          <Modal onClose={toggleModal}>
+            <img src={modalImg} alt={modalAlt} />
           </Modal>
         )}
-        {this.state.loading && <Load />}
-        {this.state.images.length > 0 && (
-          <div className={'container'}>
-            <Button onClick={this.fetchImages} />
-          </div>
-        )}
-      </div>
+        <Container>
+          <Searchbar onSubmit={handleSearchbarSubmit} />
+          {gallery.length > 0 && (
+            <ImageGallery onClickImg={setCurrentPictureSrc} gallery={gallery} />
+          )}
+          {status === 'pending' ? (
+            <Load
+              className={s.loader}
+              type="Circles"
+              color="#00BFFF"
+              height={80}
+              width={80}
+            />
+          ) : (
+            <Button handleClickBtn={fetchImages} />
+          )}
+        </Container>
+      </>
     );
   }
 }
