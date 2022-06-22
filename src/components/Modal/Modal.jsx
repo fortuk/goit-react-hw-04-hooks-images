@@ -1,32 +1,28 @@
 import React, { useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import s from '../Modal/Modal.module.css';
 
-const modalRoot = document.querySelector('#modal-root');
-
 export default function Modal({ onClose, children }) {
   useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.code === 'Escape') {
+        onClose();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleKeyDown = event => {
-    if (event.code === 'Escape') {
-      onClose();
-    }
-  };
+  }, [onClose]);
 
   const handleBackdropClick = event => {
-    if (event.target === event.currentTarget) {
+    if (event.currentTarget === event.target) {
       onClose();
     }
   };
 
-  return createPortal(
+  return (
     <div className={s.overlay} onClick={handleBackdropClick}>
       <div className={s.modal}>
         {children}
@@ -34,8 +30,7 @@ export default function Modal({ onClose, children }) {
           X
         </button>
       </div>
-    </div>,
-    modalRoot,
+    </div>
   );
 }
 Modal.propTypes = {

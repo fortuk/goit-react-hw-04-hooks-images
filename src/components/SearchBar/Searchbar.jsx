@@ -3,21 +3,20 @@ import PropTypes from 'prop-types';
 import s from './Searchbar.module.css';
 
 export default function Searchbar({ onSubmit }) {
-  const [query, setQuery] = useState('');
+  const [input, setInput] = useState('');
 
   const handleNameChange = event => {
-    setQuery(event.currentTarget.value);
+    setInput(event.currentTarget.value.toLowerCase());
   };
 
   const handleSubmit = event => {
     event.preventDefault();
 
-    if (query.trim() === '') {
+    if (input.trim() === '') {
       alert('Введите слово для поиска');
       return;
     }
-
-    onSubmit(query.trim().toLowerCase());
+    onSubmit(input);
   };
 
   return (
@@ -33,7 +32,7 @@ export default function Searchbar({ onSubmit }) {
           autoComplete="off"
           autoFocus
           placeholder="Search images and photos"
-          value={query}
+          value={input}
           onChange={handleNameChange}
         />
       </form>
