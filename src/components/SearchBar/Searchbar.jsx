@@ -2,21 +2,21 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import s from './Searchbar.module.css';
 
-export default function Searchbar({ onSubmit }) {
-  const [input, setInput] = useState('');
+function Searchbar({ onSubmit }) {
+  const [image, setImageName] = useState('');
 
   const handleNameChange = event => {
-    setInput(event.currentTarget.value.toLowerCase());
+    setImageName(event.target.value.toLowerCase());
   };
 
   const handleSubmit = event => {
     event.preventDefault();
 
-    if (input.trim() === '') {
+    if (image.trim() === '') {
       alert('Введите слово для поиска');
       return;
     }
-    onSubmit(input);
+    onSubmit(image);
   };
 
   return (
@@ -32,7 +32,7 @@ export default function Searchbar({ onSubmit }) {
           autoComplete="off"
           autoFocus
           placeholder="Search images and photos"
-          value={input}
+          value={image}
           onChange={handleNameChange}
         />
       </form>
@@ -41,5 +41,9 @@ export default function Searchbar({ onSubmit }) {
 }
 
 Searchbar.propTypes = {
-  onSubmit: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  onChange: PropTypes.func,
+  value: PropTypes.string,
 };
+
+export default Searchbar;
