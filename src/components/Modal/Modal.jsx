@@ -34,6 +34,6 @@ export default function Modal({ onClose, children }) {
   );
 }
 Modal.propTypes = {
-  largeImageURL: PropTypes.string,
+  children: PropTypes.string,
   onClose: PropTypes.func.isRequired,
 };

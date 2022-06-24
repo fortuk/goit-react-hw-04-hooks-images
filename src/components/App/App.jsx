@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from '../SearchBar/Searchbar';
 import ImageGallery from '../ImageGallery/ImageGallery';
-import imagesApi from '../../api/imagesApi';
+import imagesApi, { PER_PAGE } from '../../api/imagesApi';
 import Button from '../Button/Button';
 import Modal from '../Modal/Modal';
 import Container from '../Container/Container';
@@ -17,7 +17,6 @@ export default function App() {
   const [modalImg, setModalImg] = useState('');
   const [modalAlt, setModalAlt] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (query.trim() === '') {
@@ -26,34 +25,37 @@ export default function App() {
 
     setStatus('pending');
 
-    imagesApi
-      .fetchImagesWithQuery(query, page)
-      .then(({ hits }) => {
-        const images = hits.map(({ id, webformatURL, largeImageURL, tags }) => {
-          return { id, webformatURL, largeImageURL, tags };
-        });
-        // console.log(images);
-        if (images.length > 0) {
-          setGallery(state => [...state, ...images]);
-          setStatus('resolved');
-        } else {
-          alert(`По запросу ${query} ничего не найдено.`);
-          setStatus('idle');
-        }
-      })
-      .catch(error => {
-        setError(error);
-        setStatus('rejected');
-      })
-      .finally(() => {
-        if (page > 1) {
-          window.scrollTo({
-            top: document.documentElement.scrollHeight,
-            behavior: 'smooth',
-          });
-        }
+    imagesApi.fetchImagesWithQuery(query, page).then(({ hits }) => {
+      const images = hits.map(({ id, webformatURL, largeImageURL, tags }) => {
+        return { id, webformatURL, largeImageURL, tags };
       });
+      // console.log(images);
+      if (images.length === 0 && page === 1) {
+        alert(`По запросу ${query} ничего не найдено.`);
+        setStatus('idle');
+      }
+      if (images.length === 0 && page > 1) {
+        alert('Конец списка изображений');
+        setStatus('idle');
+        return;
+      }
+
+      setGallery(state => [...state, ...images]);
+      setStatus('resolved');
+    });
   }, [page, query]);
+
+  useEffect(() => {
+    if (gallery.length <= PER_PAGE) return;
+    handleScroll();
+  }, [gallery]);
+
+  const handleScroll = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
 
   const handleSearchbarSubmit = request => {
     if (request !== query) {
@@ -80,29 +82,18 @@ export default function App() {
     setModalAlt(altForModal);
     setShowModal(true);
   };
-
-  if (status === 'idle') {
-    return (
+  return (
+    <div className="App">
       <Container>
         <Searchbar onSubmit={handleSearchbarSubmit} />
       </Container>
-    );
-  }
-
-  if (status === 'rejected') {
-    return <h1>{error.message}</h1>;
-  }
-
-  if (status === 'resolved' || status === 'pending') {
-    return (
-      <>
-        {showModal && (
-          <Modal onClose={toggleModal}>
-            <img src={modalImg} alt={modalAlt} />
-          </Modal>
-        )}
-        <Container>
-          <Searchbar onSubmit={handleSearchbarSubmit} />
+      {(status === 'resolved' || status === 'pending') && (
+        <>
+          {showModal && (
+            <Modal onClose={toggleModal}>
+              <img src={modalImg} alt={modalAlt} />
+            </Modal>
+          )}
           {gallery.length > 0 && (
             <ImageGallery onClickImg={setCurrentPictureSrc} gallery={gallery} />
           )}
@@ -117,8 +108,8 @@ export default function App() {
           ) : (
             <Button handleClickBtn={fetchImages} />
           )}
-        </Container>
-      </>
-    );
-  }
+        </>
+      )}
+    </div>
+  );
 }

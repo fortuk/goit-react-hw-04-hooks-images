@@ -6,7 +6,8 @@ function Searchbar({ onSubmit }) {
   const [image, setImageName] = useState('');
 
   const handleNameChange = event => {
-    setImageName(event.target.value.toLowerCase());
+    setImageName(event.target.value);
+    console.log(event.target.value);
   };
 
   const handleSubmit = event => {
@@ -42,8 +43,6 @@ function Searchbar({ onSubmit }) {
 
 Searchbar.propTypes = {
   onSubmit: PropTypes.func,
-  onChange: PropTypes.func,
-  value: PropTypes.string,
 };
 
 export default Searchbar;
